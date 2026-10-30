@@ -1,1 +1,0 @@
-import{cQ as e}from"./index-bhAAHvEO.js";const r={ROK:"rok",PTSLG:"ptslg",SAMO:"samo",PGAME:"pgame",W3:"w3",AFK:"afk",IGAME:"afkj",WGAME:"warpath"};function c(t){const o=r;return Object.prototype.hasOwnProperty.call(o,t)?o[t]:null}function a(){const t=e(o=>o.product);return{product:t,project:c(t)}}export{a as u};
