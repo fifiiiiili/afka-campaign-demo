@@ -1,1 +1,0 @@
-import{b_ as a,f as i,bm as s,bn as t,bR as e}from"./index-Dh4Q9mjG.js";var x=a({chartName:"BarChart",GraphicalChild:i,defaultTooltipEventType:"axis",validateTooltipEventTypes:["axis","item"],axisComponents:[{axisType:"xAxis",AxisComp:s},{axisType:"yAxis",AxisComp:t}],formatAxisMap:e});export{x as B};
