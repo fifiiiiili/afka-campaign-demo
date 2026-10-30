@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>规则复盘 · 原型 v2</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --line:#eceef1; --ink:#1f2329; --sub:#646a73; --mut:#8f959e;
+    --blue:#2563eb; --green:#10b981; --amber:#d97706; --red:#dc2626; --violet:#8b5cf6;
+    --blbg:#eff6ff; --gnbg:#ecfdf5; --ambg:#fffbeb; --rdbg:#fef2f2; --grbg:#f4f5f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,"PingFang SC",system-ui,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px}
+  .h1{font-size:22px;font-weight:800;display:flex;align-items:baseline;gap:10px}
+  .h1 .meta{font-size:13px;color:var(--sub);font-weight:400}
+  .tabs{display:flex;gap:6px;margin:16px 0 18px;border-bottom:1px solid var(--line)}
+  .tab{padding:9px 16px;font-weight:600;color:var(--sub);border-bottom:2px solid transparent;cursor:pointer;font-size:14px}
+  .tab.on{color:var(--blue);border-color:var(--blue)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .sec-t{font-weight:700;font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .sec-d{font-size:12px;color:var(--mut);margin-bottom:14px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
+  .code{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--sub);background:var(--grbg);padding:1px 6px;border-radius:5px}
+  .row{display:flex;gap:12px}
+  .btn{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer;color:var(--ink)}
+  .btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.amb{background:var(--amber);color:#fff;border-color:var(--amber)}
+  .btn.sm{padding:2px 8px;font-size:11px}
+  .mut{color:var(--mut)} .sub{color:var(--sub)}
+
+  .funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .fcell{position:relative;border-radius:10px;padding:14px;border:1px solid var(--line)}
+  .fcell .lvl{font-size:13px;font-weight:700}
+  .fcell .n{font-size:30px;font-weight:800;line-height:1.1;margin:4px 0}
+  .fcell .kv{font-size:11px;color:var(--sub)}
+  .fcell .arrow{position:absolute;right:-12px;top:50%;transform:translateY(-50%);z-index:2;color:#c9ced6;font-size:18px}
+  .c-cand{background:var(--grbg)} .c-reco{background:var(--blbg)} .c-auto{background:var(--gnbg)} .c-dis{background:#fafafa;opacity:.85}
+
+  .reco-list{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  .reco{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:13px}
+  .reco.up{background:var(--gnbg)} .reco.down{background:var(--ambg)} .reco.kill{background:var(--rdbg)}
+  .reco .why{color:var(--sub);font-size:12px}
+  .reco .sp{margin-left:auto;display:flex;gap:6px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:12px}
+  .stat .lab{font-size:12px;color:var(--mut)}
+  .stat .big{font-size:24px;font-weight:800;margin-top:2px}
+  .stat .seg{display:flex;gap:8px;font-size:11px;color:var(--sub);margin-top:6px;flex-wrap:wrap}
+  .bar{height:8px;border-radius:999px;background:#eef0f3;overflow:hidden;display:flex;margin-top:8px}
+  .bar>i{display:block;height:100%}
+  .boards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .board{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .board .bh{padding:8px 12px;font-weight:700;font-size:13px;border-bottom:1px solid var(--line)}
+  .board.bad .bh{background:var(--rdbg);color:var(--red)} .board.good .bh{background:var(--gnbg);color:var(--green)}
+  .brow{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;border-bottom:1px solid var(--line)}
+  .brow:last-child{border:0}
+  .brow .nm{font-weight:600} .brow .mx{margin-left:auto;display:flex;gap:10px;font-size:11px;color:var(--sub)}
+
+  .drill{display:grid;grid-template-columns:320px 1fr;gap:14px}
+  .rlist{border:1px solid var(--line);border-radius:10px;overflow:hidden;max-height:520px;overflow-y:auto}
+  .ritem{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .ritem:hover{background:#fafbfc}
+  .ritem.on{background:var(--blbg);box-shadow:inset 3px 0 0 var(--blue)}
+  .ritem .rn{font-weight:600;font-size:13px}
+  .ritem .rm{font-size:11px;color:var(--sub);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .detail{border:1px solid var(--line);border-radius:10px;padding:16px;min-height:520px}
+  .dh{display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}
+  .dh .ic{font-size:22px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--grbg);border-radius:8px;padding:10px}
+  .kpi.hl{background:var(--blbg)}
+  .kpi .l{font-size:11px;color:var(--mut)} .kpi .v{font-size:18px;font-weight:800;margin-top:2px}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:6px}
+  .spark>i{width:7px;background:var(--blue);border-radius:2px 2px 0 0;opacity:.85}
+  .tl .ev{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px}
+  .tl .ev .dt{color:var(--mut);width:78px;flex-shrink:0}
+  .tl .ev .ot{margin-left:auto;font-weight:600}
+  .tag-ok{background:var(--gnbg);color:var(--green)} .tag-no{background:var(--rdbg);color:var(--red)}
+  .tag-obs{background:var(--grbg);color:var(--sub)} .tag-exe{background:var(--ambg);color:var(--amber)}
+  .lab-blue{background:var(--blbg);color:var(--blue)} .lab-green{background:var(--gnbg);color:var(--green)}
+  .lab-gray{background:var(--grbg);color:var(--sub)} .lab-amber{background:var(--ambg);color:var(--amber)}
+  h4{margin:16px 0 8px;font-size:13px}
+  .placeholder{padding:60px;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="h1">📊 复盘 <span class="meta">ROK · FB · 规则体系健康 + 触发复盘</span></div>
+  <div class="tabs">
+    <div class="tab on" onclick="switchTab(this,'rule')">📚 规则复盘</div>
+    <div class="tab" onclick="switchTab(this,'topic')">🎯 专项复盘</div>
+  </div>
+
+  <div id="pane-rule">
+
+    <!-- ① 沉淀漏斗 -->
+    <div class="card">
+      <div class="sec-t">① 沉淀漏斗 <span class="chip lab-gray">三种规则的生命周期</span></div>
+      <div class="sec-d">规则怎么从「候选影子」一步步沉淀到「自动托管」。各档信任度指标按 level 各测各的:候选/自动看「准确率·结果偏差」,推荐看「采纳率」。</div>
+      <div class="funnel">
+        <div class="fcell c-cand">
+          <div class="lvl">候选 · 影子</div><div class="n">3</div>
+          <div class="kv">准确率均值 82%(结果偏差) · 样本均 10</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="fcell c-reco">
+          <div class="lvl">推荐 · 待人审</div><div class="n">2</div>
+          <div class="kv">采纳率均值 77%</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="fcell c-auto">
+          <div class="lvl">自动 · 托管</div><div class="n">2</div>
+          <div class="kv">准确率均值 87%(结果偏差) · 近7天执行 13</div>
+        </div>
+        <div class="fcell c-dis">
+          <div class="lvl">停用</div><div class="n">1</div>
+          <div class="kv">可在停用列表恢复</div>
+        </div>
+      </div>
+
+      <div class="reco-list">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">🧭 系统建议(可一键处理)</div>
+        <div class="reco up">⬆ <span class="code">控量-001</span> <b>高CPI预警</b><span class="why">候选准确率 92%(结果偏差) · 样本 8(达标)→ 建议升『推荐』</span>
+          <span class="sp"><button class="btn sm pri">升推荐</button><button class="btn sm">看详情</button></span></div>
+        <div class="reco up">⬆ <span class="code">素材-002</span> <b>新素材24h验证</b><span class="why">推荐采纳率 88% · 连续 3 周稳 → 建议升『自动』</span>
+          <span class="sp"><button class="btn sm pri">升自动</button><button class="btn sm">看详情</button></span></div>
+        <div class="reco down">⬇ <span class="code">控量-002</span> <b>ROI暴跌停投</b><span class="why">推荐采纳率 40%(误报偏高)→ 建议改条件 / 降候选</span>
+          <span class="sp"><button class="btn sm amb">改条件</button><button class="btn sm">看详情</button></span></div>
+        <div class="reco kill">🗑 <span class="code">控量-003</span> <b>旧版低效预警</b><span class="why">创建 58 天 · 仅命中 1 次 → 建议淘汰</span>
+          <span class="sp"><button class="btn sm">停用</button><button class="btn sm">看详情</button></span></div>
+      </div>
+    </div>
+
+    <!-- ② 触发复盘 -->
+    <div class="card">
+      <div class="sec-t">② 触发复盘 <span class="chip lab-gray">近 7 天</span>
+        <span style="margin-left:auto"><button class="btn sm">近7天</button><button class="btn sm">近30天</button></span></div>
+      <div class="sec-d">规则触发了什么、人怎么裁决、自动化靠不靠谱。</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="lab">总命中</div><div class="big">38</div>
+          <div class="bar"><i style="width:37%;background:#9aa1ab"></i><i style="width:29%;background:var(--blue)"></i><i style="width:34%;background:var(--green)"></i></div>
+          <div class="seg"><span>● 候选观察 14</span><span style="color:var(--blue)">● 推荐提案 11</span><span style="color:var(--green)">● 自动执行 13</span></div>
+        </div>
+        <div class="stat"><div class="lab">推荐采纳率</div><div class="big">73%</div>
+          <div class="seg"><span class="chip tag-ok">通过 8</span><span class="chip tag-no">否决 3</span></div>
+          <div class="kv mut" style="font-size:11px;margin-top:6px">人对推荐规则建议的背书度</div>
+        </div>
+        <div class="stat"><div class="lab">候选/自动准确率</div><div class="big">85%</div>
+          <div class="kv mut" style="font-size:11px;margin-top:6px">结果偏差:命中后真实 D7 ROI 兑现方向的比例</div>
+        </div>
+        <div class="stat"><div class="lab">执行口径</div><div class="big">13 <span style="font-size:13px" class="mut">次</span></div>
+          <div class="seg"><span class="chip tag-exe">dry-run 13</span><span class="chip lab-gray">真改 0</span></div>
+          <div class="kv mut" style="font-size:11px;margin-top:6px">🛡 安全总闸:关</div>
+        </div>
+      </div>
+
+      <div class="boards">
+        <div class="board bad">
+          <div class="bh">🔴 误报榜 · 判断与结果/人工不符(该改条件)</div>
+          <div class="brow"><span class="code">控量-002</span><span class="nm">ROI暴跌停投</span><span class="chip lab-amber">推荐</span><span class="mx"><span>命中 15</span><span>采纳 40%</span></span></div>
+          <div class="brow"><span class="code">控量-004</span><span class="nm">CPM飙升降级</span><span class="chip lab-gray">候选</span><span class="mx"><span>命中 9</span><span>准确 52%</span></span></div>
+        </div>
+        <div class="board good">
+          <div class="bh">🟢 顶梁柱榜 · 高命中 + 高信任(准确/采纳)</div>
+          <div class="brow"><span class="code">素材-001</span><span class="nm">FB素材衰退</span><span class="chip lab-green">自动</span><span class="mx"><span>命中 47</span><span>准确 89%</span></span></div>
+          <div class="brow"><span class="code">素材-003</span><span class="nm">大R污染剔除</span><span class="chip lab-green">自动</span><span class="mx"><span>命中 31</span><span>准确 85%</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 单规则下钻 -->
+    <div class="card">
+      <div class="sec-t">③ 单规则下钻 <span class="chip lab-gray">逐条细看</span></div>
+      <div class="sec-d">左侧选一条规则,右侧看它的全貌:信任度走势、命中时间线、处置历史。指标随 level 自适应。</div>
+      <div class="drill">
+        <div class="rlist" id="rlist"></div>
+        <div class="detail" id="detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-topic" style="display:none">
+    <div class="card">
+      <div class="sec-t">🎯 专项复盘 <span class="chip lab-gray">围绕一个主题做深度复盘</span></div>
+      <div class="sec-d">区别于规则复盘(体检规则体系):专项复盘是你围绕某主题(某次放量/换素材/某国家)拉数据、记结论。</div>
+      <button class="btn pri">+ 新建专项复盘</button>
+      <h4>已存专项</h4>
+      <div class="board">
+        <div class="brow"><span class="nm">6月 US 放量复盘</span><span class="chip lab-blue">ROK·FB·US</span><span class="sub">D7 ROI 9.1%→11.3%,放量成立;头部素材集中度偏高</span><span class="mx">06-12</span></div>
+        <div class="brow"><span class="nm">换素材后效果复盘</span><span class="chip lab-blue">PTSLG·FB</span><span class="sub">新素材起量但首日付费率未提,结论:维持观察</span><span class="mx">06-08</span></div>
+      </div>
+      <div class="placeholder">(专项复盘 v1:新建流程 + 指标前后对比 + 结论/行动项存档 —— 原型先示意结构)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 语义编号:方向-序号。结果偏差准确率 acc(候选/自动) · 采纳率 adopt(推荐)
+const RULES = [
+  {id:"素材-001",name:"FB素材衰退",dir:"素材生命周期",lvl:"auto",acc:.89,hit:47,adopt:null,age:"2025-12-03",
+   spark:[60,66,70,72,78,84,89], tl:[
+     {dt:"06-15 09:10",t:"命中 ROK-iOS-US-AEO",o:"执行·dry-run",c:"tag-exe"},
+     {dt:"06-14 09:08",t:"命中 ROK-AND-T1",o:"执行·dry-run",c:"tag-exe"},
+     {dt:"06-12 09:05",t:"命中 ROK-iOS-JP → D7 兑现(真低于目标)",o:"判对",c:"tag-ok"},
+   ]},
+  {id:"素材-002",name:"新素材24h验证",dir:"素材生命周期",lvl:"recommend",acc:null,hit:23,adopt:.88,age:"2026-05-20",
+   spark:[55,60,68,70,74,79,88], tl:[
+     {dt:"06-15 10:00",t:"命中 新素材 EN_3D_海岛",o:"提案→通过",c:"tag-ok"},
+     {dt:"06-13 10:00",t:"命中 新素材 黑化",o:"提案→否决",c:"tag-no"},
+   ]},
+  {id:"控量-001",name:"高CPI预警",dir:"控量",lvl:"candidate",acc:.92,hit:8,adopt:null,age:"2026-06-05",
+   spark:[null,80,85,88,90,91,92], tl:[
+     {dt:"06-15 08:30",t:"命中 PTSLG-iOS-WW(观察)",o:"观察·未执行",c:"tag-obs"},
+     {dt:"06-08 08:30",t:"06-08 命中 → D7 兑现(真高CPI)",o:"判对",c:"tag-ok"},
+   ]},
+  {id:"控量-002",name:"ROI暴跌停投",dir:"控量",lvl:"recommend",acc:null,hit:15,adopt:.40,age:"2026-05-28",
+   spark:[60,55,50,48,45,42,40], tl:[
+     {dt:"06-15 09:00",t:"命中 ROK-AND-BR",o:"提案→否决",c:"tag-no"},
+     {dt:"06-14 09:00",t:"命中 ROK-AND-BR",o:"提案→否决",c:"tag-no"},
+     {dt:"06-11 09:00",t:"命中 ROK-iOS-US",o:"提案→通过",c:"tag-ok"},
+   ]},
+  {id:"素材-003",name:"大R污染剔除",dir:"素材生命周期",lvl:"auto",acc:.85,hit:31,adopt:null,age:"2026-01-15",
+   spark:[70,74,78,80,82,84,85], tl:[
+     {dt:"06-15 09:12",t:"命中 ROK-iOS-US 单日ARPPU尖峰",o:"执行·dry-run",c:"tag-exe"},
+   ]},
+  {id:"控量-003",name:"旧版低效预警",dir:"控量",lvl:"candidate",acc:null,hit:1,adopt:null,age:"2026-04-18",
+   spark:[null,null,null,null,null,null,null], tl:[
+     {dt:"05-02 09:00",t:"命中 ROK-AND-IN(观察)",o:"观察·未执行",c:"tag-obs"},
+   ]},
+];
+const LVL={auto:["自动","lab-green"],recommend:["推荐","lab-blue"],candidate:["候选","lab-gray"]};
+const ICON=d=>d==="控量"?"🚨":d==="放量"?"🚀":"📋";
+const pct=v=>v==null?"—":Math.round(v*100)+"%";
+// 信任度指标:推荐看采纳率;候选/自动看准确率(结果偏差)
+function qual(r){
+  return r.lvl==="recommend"
+    ? {lab:"采纳率", val:pct(r.adopt), hint:"提案被优化师通过的比例(人在环)"}
+    : {lab:"准确率(结果偏差)", val:pct(r.acc), hint:"命中后真实 D7 ROI 兑现规则方向的比例(无人/无动作,干净)"};
+}
+
+function renderList(sel){
+  document.getElementById("rlist").innerHTML = RULES.map(r=>{
+    const [ll,lc]=LVL[r.lvl]; const q=qual(r);
+    return `<div class="ritem ${r.id===sel?'on':''}" onclick="pick('${r.id}')">
+      <div class="rn">${ICON(r.dir)} <span class="code">${r.id}</span> ${r.name}</div>
+      <div class="rm"><span class="chip ${lc}">${ll}</span><span>${q.lab.split("(")[0]} ${q.val}</span><span>命中 ${r.hit}</span></div>
+    </div>`;}).join("");
+}
+function renderDetail(id){
+  const r=RULES.find(x=>x.id===id); const [ll,lc]=LVL[r.lvl]; const q=qual(r);
+  const maxv=Math.max(...r.spark.filter(x=>x!=null),1);
+  const bars=r.spark.map(v=>`<i style="height:${v==null?2:Math.round(v/maxv*36)}px;opacity:${v==null?.15:.85}"></i>`).join("");
+  const tl=r.tl.map(e=>`<div class="ev"><span class="dt">${e.dt}</span><span>${e.t}</span><span class="ot chip ${e.c}">${e.o}</span></div>`).join("");
+  const up = r.lvl==='candidate'?'升推荐':r.lvl==='recommend'?'升自动':'降推荐';
+  document.getElementById("detail").innerHTML=`
+    <div class="dh"><div class="ic">${ICON(r.dir)}</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:800"><span class="code" style="font-size:13px">${r.id}</span> ${r.name}</div>
+        <div class="rm" style="margin-top:4px"><span class="chip ${lc}">${ll}</span><span class="sub">方向 ${r.dir}</span><span class="sub">创建于 ${r.age}</span></div>
+      </div>
+      <div class="row"><button class="btn sm">✏ 编辑</button><button class="btn sm pri">${up}</button></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi hl"><div class="l">${q.lab}</div><div class="v">${q.val}</div></div>
+      <div class="kpi"><div class="l">命中次数</div><div class="v">${r.hit}</div></div>
+      <div class="kpi"><div class="l">${r.lvl==='recommend'?'结果偏差':'采纳率'}</div><div class="v">—</div></div>
+      <div class="kpi"><div class="l">当前模式</div><div class="v" style="font-size:15px">${ll}</div></div>
+    </div>
+    <div class="mut" style="font-size:11px;margin:-6px 0 10px">ⓘ ${q.hint}${r.lvl==='recommend'?' · 推荐级有人审,结果被动作混淆,不算结果偏差':' · 该级无人审,只能用数据结果衡量'}</div>
+    <h4>📈 ${q.lab.split("(")[0]}走势(近 7 个评估周期)</h4>
+    <div class="spark">${bars}</div>
+    <div class="mut" style="font-size:11px;margin-top:4px">${r.spark.every(x=>x==null)?'候选样本不足,尚无成熟评估':''}</div>
+    <h4>🕒 命中时间线 + 处置</h4>
+    <div class="tl">${tl||'<div class="mut" style="padding:10px">暂无命中</div>'}</div>`;
+}
+function pick(id){renderList(id);renderDetail(id);}
+function switchTab(el,k){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+  document.getElementById('pane-rule').style.display=k==='rule'?'':'none';
+  document.getElementById('pane-topic').style.display=k==='topic'?'':'none';
+}
+pick("素材-001");
+</script>
+</body>
+</html>
